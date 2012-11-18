@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block body %}
+  <ul class=movies>
+  {% for movie in movies %}
+    <li><h2><a href="/movie/{{movie.id}}">{{ movie.title }}</a></h2></li>
+  {% else %}
+    <li><em>Unbelievable.  No movies here so far</em></li>
+  {% endfor %}
+  </ul>
+{% endblock %}

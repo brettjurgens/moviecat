@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block body %}
+
+  <!-- schema:
+    [0] = id
+    [1] = tmdbid
+    [2] = title
+    [3] = year
+    [4] = tagline
+    [5] = overview
+    [6] = runtime
+    [7] = rating
+    [8] = homepage
+    [9] = youtube trailer
+    [10] = location
+    [11] = filename -->
+  <h1>{{ movie[2] }}</h1>
+  <h3>{{movie[4]}}</h3>
+
+  {% if movie[9] != None and (movie[9]|count) > 0 %}
+  <iframe width="560" height="315" src="http://www.youtube.com/embed/{{movie[9].replace('http://www.youtube.com/watch?v=', '')}}" frameborder="0" allowfullscreen></iframe>
+  {% endif %}
+  <br />
+
+  {% if movie[8] != None and (movie[8]|count) > 0 %}
+  <a href="{{movie[8]}}">Homepage</a><br/>
+  {% endif %}
+
+  Location: {{movie[10]}}/{{movie[11]}}<br/>
+  Rating:  {{ movie[7]}}/10<br />
+  Release year: {{movie[3]}}<br />
+  Summary: {{movie[5]}}<br />
+{% endblock %}
