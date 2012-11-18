@@ -74,17 +74,21 @@ def downloadImages(path, movie):
     print "Downloaded backdrop" + stringy + " to " + location
     count += 1
   
-  count = 0
-  for poster in movie.posters:
-    img = requests.get(poster.geturl())
-    if count is 0:
-      stringy = ""
-    else:
-      stringy = str(count)
-    with open(location + "/poster" + stringy + ".jpg", "wb") as image:
-      image.write(img.content)
-    print "Downloaded poster" + stringy + " to " + location
-    count += 1
+  img = requests.get(movie.poster.geturl())
+  with open(location + "/folder.jpg", "wb") as image:
+    image.write(img.content)
+  print "Downloaded folder image to " + location
+  # count = 0
+  # for poster in movie.posters:
+  #   img = requests.get(poster.geturl())
+  #   if count is 0:
+  #     stringy = ""
+  #   else:
+  #     stringy = str(count)
+  #   with open(location + "/poster" + stringy + ".jpg", "wb") as image:
+  #     image.write(img.content)
+  #   print "Downloaded poster" + stringy + " to " + location
+  #   count += 1
 
 
 
@@ -168,7 +172,7 @@ def show_entries():
 
 @app.route('/movie/<id>')
 def show_movie(id):
-  cur = g.db.execute('select * from movies where id=? limit 1', id)
+  cur = g.db.execute('select * from movies where id=? limit 1', [id])
   movie = cur.fetchone()
   return render_template('show_movie.html', movie=movie)
 
@@ -179,7 +183,7 @@ def update():
 
 @app.route('/downloadmeta/<id>')
 def download_meta(id):
-  cur = g.db.execute('select tmdbid, location, filename from movies where id=? limit 1', id)
+  cur = g.db.execute('select tmdbid, location, filename from movies where id=? limit 1', [id])
   record = cur.fetchone()
   movie = Movie(record[0])
   downloadImages(record[1] + '/' + record[2], movie)

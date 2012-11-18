@@ -17,6 +17,8 @@
   <h1>{{ movie[2] }}</h1>
   <h3>{{movie[4]}}</h3>
 
+  <a href="/downloadmeta/{{movie[0]}}">download images</a><br />
+
   {% if movie[9] != None and (movie[9]|count) > 0 %}
   <iframe width="560" height="315" src="http://www.youtube.com/embed/{{movie[9].replace('http://www.youtube.com/watch?v=', '')}}" frameborder="0" allowfullscreen></iframe>
   {% endif %}
