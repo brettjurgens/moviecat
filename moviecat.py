@@ -23,6 +23,10 @@ SECRET_KEY = '123omgsecret321'
 USERNAME = 'admin'
 PASSWORD = 'default'
 
+# movie
+from tmdb3 import Movie, set_key
+set_key('a158113d4e983474500180058409852c')
+
 
 if sys.version_info < (2, 5):
   print "Sorry, Python 2.5+ Required"
@@ -51,7 +55,7 @@ def addToDB(movieArr):
 
 def downloadImages(path, movie):
   import requests
-  from tmdb3 import Movie
+
   count = 0
 
   if os.path.isfile(path):
@@ -85,10 +89,7 @@ def downloadImages(path, movie):
 
 
 def tmdbFindEm(list):
-  from tmdb3 import set_key
-  set_key('a158113d4e983474500180058409852c')
-
-  from tmdb3 import searchMovie, Movie
+  from tmdb3 import searchMovie
 
   count = 0
 
@@ -109,7 +110,6 @@ def tmdbFindEm(list):
     if len(res) is not 0:
       print res[0]
       mov = res[0]
-      downloadImages(location + "/" + movie, mov)
       if len(mov.youtube_trailers) is not 0:
         trailer = mov.youtube_trailers[0].geturl()
       else:
@@ -168,14 +168,22 @@ def show_entries():
 
 @app.route('/movie/<id>')
 def show_movie(id):
-  cur = g.db.execute('select * from movies where id=' + id)
-  movie = cur.fetchall()
-  return render_template('show_movie.html', movie=movie[0])
+  cur = g.db.execute('select * from movies where id=? limit 1', id)
+  movie = cur.fetchone()
+  return render_template('show_movie.html', movie=movie)
 
 @app.route('/updateDB')
 def update():
   searchDatShiz()
-  return "updating..."
+  return "updated..."
+
+@app.route('/downloadmeta/<id>')
+def download_meta(id):
+  cur = g.db.execute('select tmdbid, location, filename from movies where id=? limit 1', id)
+  record = cur.fetchone()
+  movie = Movie(record[0])
+  downloadImages(record[1] + '/' + record[2], movie)
+  return "downloaded metadata..."
 
 app.config.from_object(__name__)
 if __name__ == '__main__':
