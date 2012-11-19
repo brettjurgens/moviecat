@@ -5,7 +5,7 @@ import os
 
 # valid video formats/containers, and random other ones because wikipedia is a liar
 validFormats = ['3gp', '3g2', 'asf', 'wma', 'wmv', 'avi', 'divx', 'evo', 'f4v', 'flv', 'iso', 'mkv', 'mk3d', 'mka', 'mks', 'mcf', 
-'mp4', 'mpg', 'mpeg', 'ps', 'ts', 'm2ts', 'mxf', 'ogg', 'mov', 'qt', 'rmvb', 'vob', 'webm']
+                'mp4', 'mpg', 'mpeg', 'ps', 'ts', 'm2ts', 'mxf', 'ogg', 'mov', 'qt', 'rmvb', 'vob', 'webm']
 
 # path, make dynamic later
 path = "/Volumes/media/Movies/BDs"
@@ -102,7 +102,8 @@ def tmdbFindEm(list):
     for movie,location in list.iteritems():
 
         filename = movie
-        movie = os.path.splitext(movie)[0]
+        if os.path.isfile(movie):
+            movie = os.path.splitext(movie)[0]
 
         if len(location.replace(path, '').replace('/', '')) > 0:
             movie = location.replace(path,'').replace('/','')
