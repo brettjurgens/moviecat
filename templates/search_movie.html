@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if movies|count >0 %}
+  <form id="acceptMovieForm" action="/acceptMovie" method="post">
+    <table class=movies>
+      <tr>
+        <td></td>
+        <td>{{path}}<td>
+      </tr>
+    {% for key in movies recursive %}
+      <tr>
+        <td>
+          <input type="radio" id="{{key}}" name="radio" value="{{key}}"/>
+          <input type="hidden" name="addedname" value="{{movies[key]}}"/>
+          <input type="hidden" name="path" value="{{path}}"/>
+        </td>
+        <td>
+          <label for="{{key}}">
+            {% if posters[key] != None %}
+              <img src="{{posters[key]}}" height="100px"/>
+            {% endif %}
+          </label>
+        </td>
+        <td>
+          <label for="{{key}}">
+            {{key}} - {{movies[key]}}
+          </label>
+        </td>
+        <td>
+          <a href="http://themoviedb.org/movie/{{key}}">themoviedb link</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </table>
+    <input type="submit" />
+  </form>
+  {% endif %}
+{% endblock %}
