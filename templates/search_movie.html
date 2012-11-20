@@ -13,6 +13,9 @@
           <input type="radio" id="{{key}}" name="radio" value="{{key}}"/>
           <input type="hidden" name="addedname" value="{{movies[key]}}"/>
           <input type="hidden" name="path" value="{{path}}"/>
+          {% if id != -1%}
+          <input type="hidden" name="update_id" value="{{id}}" />
+          {% endif %}
         </td>
         <td>
           <label for="{{key}}">

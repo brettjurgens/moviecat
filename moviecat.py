@@ -12,12 +12,12 @@ if sys.version_info < (2, 5):
 validFormats = ['3gp', '3g2', 'asf', 'wma', 'wmv', 'avi', 'divx', 'evo', 'f4v', 'flv', 'iso', 'mkv', 'mk3d', 'mka', 'mks', 'mcf', 
                 'mp4', 'mpg', 'mpeg', 'ps', 'ts', 'm2ts', 'mxf', 'ogg', 'mov', 'qt', 'rmvb', 'vob', 'webm']
 
-# path, make dynamic later
-path = "/Volumes/media/Movies/BDs"
-
 # processQueue (queue used for adding movies)
 from collections import deque
 processQueue = deque()
+
+# make dynamic
+GLOBALPATH = "/Volumes/media/Movies/BDs"
 
 # web serve
 import sqlite3
@@ -36,6 +36,12 @@ from tmdb3 import Movie, set_key
 set_key('a158113d4e983474500180058409852c')
 
 def recurseIt(path):
+    # cur = g.db.execute('select id from movies where (filename=? and location=?) limit 1', [os.path.basename(path), os.path.dirname(path)])
+    # result = cur.fetchone()
+    
+    # if result is not None:
+    #     return {}
+    # else:
     list = {}
     if os.path.isfile(path):
         if os.path.splitext(path)[1][1:].lower() in validFormats:
@@ -54,6 +60,10 @@ def recurseIt(path):
 
 def addToDB(movieArr):
     g.db.execute('insert into movies (tmdbid, title, year, tagline, overview, runtime, rating, homepage, trailer, location, filename) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', movieArr)
+    g.db.commit()
+
+def updateDB(movieArr):
+    g.db.execute('update movies set tmdbid=?, title=?, year=?, tagline=?, overview=?, runtime=?, rating=?, homepage=?, trailer=?, location=?, filename=? where id=?', movieArr)
     g.db.commit()
 
 def downloadImages(path, movie):
@@ -95,21 +105,24 @@ def downloadImages(path, movie):
 
 
 
-def tmdbFindEm(list):
+def tmdbFindEm():
     from tmdb3 import searchMovie
 
     count = 0
 
     notfound = []
 
-    for movie,location in list.iteritems():
+    for path in processQueue:
+
+        movie = os.path.basename(path)
+        location = os.path.dirname(path)
 
         filename = movie
         if os.path.isfile(movie):
             movie = os.path.splitext(movie)[0]
 
-        if len(location.replace(path, '').replace('/', '')) > 0:
-            movie = location.replace(path,'').replace('/','')
+        if len(location.replace(GLOBALPATH, '').replace('/', '')) > 0:
+            movie = location.replace(GLOBALPATH,'').replace('/','')
 
         res = searchMovie(movie)
         if len(res) is 0:
@@ -122,30 +135,38 @@ def tmdbFindEm(list):
                 trailer = mov.youtube_trailers[0].geturl()
             else:
                 trailer = None
-            movieArr = [mov.id, mov.title, mov.releasedate.year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename]
+            if len(str(mov.releasedate)) is not 0:
+                year = mov.releasedate.year
+            else:
+                year = "0000"
+
+            movieArr = [mov.id, mov.title, year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename]
             addToDB(movieArr)
             count += 1
         else:
             notfound.append(movie)
-    print "List size: " + str(len(list))
+
+    print "List size: " + str(len(processQueue))
     print "Found size: " + str(count)
     print "Not found: "
     print notfound
+    processQueue.clear()
 
-def tmdbFindOne(list):
+def tmdbFindOne(path):
     from tmdb3 import searchMovie
-    
-    movie = list.keys()[0]
-    location = list.values()[0]
+
+    movie = os.path.basename(path)
+    location = os.path.dirname(path)
 
     filename = movie
     if os.path.isfile(movie):
         movie = os.path.splitext(movie)[0]
 
-    if len(location.replace(path, '').replace('/', '')) > 0:
-        movie = location.replace(path,'').replace('/','')
+    if len(location.replace(GLOBALPATH, '').replace('/', '')) > 0:
+        movie = location.replace(GLOBALPATH,'').replace('/','')
 
     res = searchMovie(movie)
+
     if len(res) is 0:
         movie = ''.join([c for c in movie if c not in '*-()/\\'])
         res = searchMovie(movie)
@@ -155,15 +176,34 @@ def tmdbFindOne(list):
         return None
 
 def acceptTmdbResult(tmdbid, path):
-    location = os.path.basename(path)
-    filename = os.path.dirname(path)
+    filename = os.path.basename(path)
+    location = os.path.dirname(path)
     mov = Movie(tmdbid)
     if len(mov.youtube_trailers) is not 0:
         trailer = mov.youtube_trailers[0].geturl()
     else:
         trailer = None
-    movieArr = [mov.id, mov.title, mov.releasedate.year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename]
+    if len(str(mov.releasedate)) is not 0:
+        year = mov.releasedate.year
+    else:
+        year = "0000"
+    movieArr = [mov.id, mov.title, year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename]
     addToDB(movieArr)
+
+def acceptEdit(tmdbid, path, id):
+    filename = os.path.basename(path)
+    location = os.path.dirname(path)
+    mov = Movie(tmdbid)
+    if len(mov.youtube_trailers) is not 0:
+        trailer = mov.youtube_trailers[0].geturl()
+    else:
+        trailer = None
+    if len(str(mov.releasedate)) is not 0:
+        year = mov.releasedate.year
+    else:
+        year = "0000"
+    movieArr = [mov.id, mov.title, year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename, id]
+    updateDB(movieArr)
 
 def searchDatShiz():
     
@@ -218,7 +258,8 @@ def add_dir():
         return "directory null"
     g.db.execute('insert into directories (location) values (?)', [dir])
     g.db.commit()
-    return "added directory"
+    flash("added " + dir + " as directory")
+    return redirect(url_for('search_dir'))
 
 @app.route('/search_dir')
 def search_dir():
@@ -234,7 +275,16 @@ def add_movies_to_queue():
     movies = request.form
     for movie in movies:
         processQueue.append(movie)
-    return str(movies)
+    flash("added " + str(len(processQueue)) + " movies to the queue")
+    return redirect(url_for('process_movie_queue'))
+
+@app.route('/automatic_queue_process')
+def automagic_the_queue():
+    if len(processQueue) == 0:
+        return "nothing in queue..."
+    else:
+        tmdbFindEm()
+        return "updated..."
 
 @app.route('/process_movie_queue')
 def process_movie_queue():
@@ -244,25 +294,56 @@ def process_movie_queue():
         list = {}
         path = processQueue[0]
         list[os.path.basename(path)] = os.path.dirname(path)
-        movies = tmdbFindOne(list)
+        movies = tmdbFindOne(path)
         posters = {}
+
         # empty the list, so we can reuse it
         list.clear()
-        for movie in movies:
-            list[movie.id] = movie.title
-            if len(movie.posters) > 0:
-                posters[movie.id] = movie.poster.geturl()
-        return render_template('search_movie.html', path = path, movies=list, posters=posters)
+
+        if movies is not None:
+            for movie in movies:
+                list[movie.id] = movie.title
+                if len(movie.posters) > 0:
+                    posters[movie.id] = movie.poster.geturl()
+            return render_template('search_movie.html', path = path, movies=list, posters=posters, id=-1)
+        else:
+            return "no results for " + processQueue.popleft()
 
 @app.route('/acceptMovie', methods=["POST"])
 def accept_movie():
     moviename = request.form["addedname"]
     tmdbid = request.form["radio"]
     path = request.form["path"]
-    accepted = processQueue.popleft()
     if len(processQueue) > 0:
-        acceptTmdbResult(tmdbid, path)
-        flash('Added ' + moviename)
+        accepted = processQueue.popleft()
+        if request.form["update_id"] > 0:
+            id = request.form["update_id"]
+            acceptEdit(tmdbid, path, id)
+            flash('Successfully updated ' + moviename)
+            return redirect(url_for('show_movie', id=id))
+        else:
+            acceptTmdbResult(tmdbid, path)
+            flash('Added ' + moviename)
+            return redirect(url_for('process_movie_queue'))
+
+
+@app.route('/editmovie/<id>')
+def edit_movie(id):
+    cur = g.db.execute('select location, filename from movies where id=? limit 1', [id])
+    record = cur.fetchone()
+    path = record[0] + '/' + record[1]
+    processQueue.append(path)
+    movies = tmdbFindOne(path)
+    if movies is not None:
+        list = {}
+        posters = {}
+        for movie in movies:
+            list[movie.id] = movie.title
+            if len(movie.posters) > 0:
+                posters[movie.id] = movie.poster.geturl()
+        return render_template('search_movie.html', path = path, movies=list, posters=posters, id=id)
+    else:
+        flash("no results for " + processQueue.popleft())
         return redirect(url_for('process_movie_queue'))
 
 @app.route('/movie/<id>')
@@ -270,11 +351,6 @@ def show_movie(id):
     cur = g.db.execute('select * from movies where id=? limit 1', [id])
     movie = cur.fetchone()
     return render_template('show_movie.html', movie=movie)
-
-@app.route('/updateDB')
-def update():
-    searchDatShiz()
-    return "updated..."
 
 @app.route('/downloadmeta/<id>')
 def download_meta(id):
