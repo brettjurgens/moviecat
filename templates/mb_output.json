@@ -1,0 +1,77 @@
+{ "adult" : movie.adult,
+  "budget" : movie.budget,
+  "cast" : [ 
+    for cast in movie.cast
+      { "character" : cast.character,
+        "id" : cast.id,
+        "name" : cast.name,
+        "order" : cast.order
+      }
+      if cast is not movie.cast[-1]
+        ,
+    ],
+  "countries" : [ 
+    for key, value in movie.releases.iteritems()
+      { "certification" : value.certification,
+        "iso_3166_1" : value.country,
+        "release_date" : value.releasedate.isoformat()
+      }
+      if key is not movie.releases[-1]
+        ,
+    ],
+  "crew" : [
+    for crew in movie.crew
+      { "department" : crew.department,
+        "id" : crew.id,
+        "job" : crew.job,
+        "name" : crew.name
+      }
+      if crew is not movie.crew[-1]
+        ,
+    ],
+  "genres" : [
+    for genre in movie.genres
+      { "id" : genre.id,
+        "name" : genre.name
+      }
+      if genre is not movie.genres[-1]
+        ,
+    ],
+  "homepage" : movie.homepage
+  "id" : movie.id,
+  "imdb_id" : movie.imdb,
+  "original_title" : movie.originaltitle,
+  "overview" : movie.overview,
+  "popularity" : movie.popularity%,
+  "production_companies" : [
+    for studio in movie.studios recursive
+      { "id" : studio.id,
+        "name" : studio.name
+      }
+      if studio is not movie.studios[-1]
+        ,
+    ],
+  "production_countries" : [
+    for country in movie.countries recursive
+      { "iso_3166_1" : country.code,
+        "name" : country.name
+      }
+      if country is not movie.countries[-1]
+        ,
+    ],
+  "release_date" : movie.releasedate.isoformat(),
+  "revenue" : movie.revenue,
+  "runtime" : movie.runtime,
+  "spoken_languages" : [
+    for language in movie.languages recursive
+      { "iso_639_1" : language.id,
+        "name" : language.name
+      }
+      if language is not movie.languages[-1]
+        ,
+    ],
+  "tagline" : movie.tagline,
+  "title" : movie.title,
+  "vote_average" : movie.userrating,
+  "vote_count" : movie.votes
+}

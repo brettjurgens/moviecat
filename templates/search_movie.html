@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 {% block body %}
+  {% if id == -1 %}
+    <h2><a href="/automatic_queue_process">OR PROCESS EVERYTHING AUTOMAGICALLY!</a></h3> (prone to some hiccups)
+  {% endif %}
   {% if movies|count >0 %}
   <form id="acceptMovieForm" action="/acceptMovie" method="post">
     <table class=movies>
@@ -7,15 +10,15 @@
         <td></td>
         <td>{{path}}<td>
       </tr>
+    <input type="hidden" name="path" value="{{path}}"/>
+    {% if id != -1%}
+    <input type="hidden" name="update_id" value="{{id}}" />
+    {% endif %}
     {% for key in movies recursive %}
       <tr>
         <td>
           <input type="radio" id="{{key}}" name="radio" value="{{key}}"/>
-          <input type="hidden" name="addedname" value="{{movies[key]}}"/>
-          <input type="hidden" name="path" value="{{path}}"/>
-          {% if id != -1%}
-          <input type="hidden" name="update_id" value="{{id}}" />
-          {% endif %}
+          <input type="hidden" name="{{key}}" value="{{movies[key]}}"/>
         </td>
         <td>
           <label for="{{key}}">

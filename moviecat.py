@@ -11,7 +11,7 @@ if sys.version_info < (2, 5):
     sys.exit()
 
 # valid video formats/containers, and random other ones because wikipedia is a liar
-validFormats = ['3gp', '3g2', 'asf', 'wma', 'wmv', 'avi', 'divx', 'evo', 'f4v', 'flv', 'iso', 'mkv', 'mk3d', 'mka', 'mks', 'mcf', 
+validFormats = ['3gp', '3g2', 'asf', 'wma', 'wmv', 'avi', 'divx', 'evo', 'f4v', 'flv', 'iso', 'mkv', 'mk3d', 'mka', 'mks', 'mcf',
                 'mp4', 'mpg', 'mpeg', 'ps', 'ts', 'm2ts', 'mxf', 'ogg', 'mov', 'qt', 'rmvb', 'vob', 'webm']
 
 # processQueue (queue used for adding movies)
@@ -37,10 +37,11 @@ PASSWORD = 'default'
 from tmdb3 import Movie, set_key
 set_key('a158113d4e983474500180058409852c')
 
+
 def recurseIt(path):
     # cur = g.db.execute('select id from movies where (filename=? and location=?) limit 1', [os.path.basename(path), os.path.dirname(path)])
     # result = cur.fetchone()
-    
+
     # if result is not None:
     #     return {}
     # else:
@@ -56,7 +57,8 @@ def recurseIt(path):
         else:
             for file in os.listdir(path):
                 if file[0] != ".":
-                    list = dict(list.items() + recurseIt(path + '/' + file).items())
+                    list = dict(
+                        list.items() + recurseIt(path + '/' + file).items())
     return list
 
 
@@ -64,9 +66,11 @@ def addToDB(movieArr):
     g.db.execute('insert into movies (tmdbid, title, year, tagline, overview, runtime, rating, homepage, trailer, location, filename) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', movieArr)
     g.db.commit()
 
+
 def updateDB(movieArr):
     g.db.execute('update movies set tmdbid=?, title=?, year=?, tagline=?, overview=?, runtime=?, rating=?, homepage=?, trailer=?, location=?, filename=? where id=?', movieArr)
     g.db.commit()
+
 
 def downloadImages(path, movie):
     import requests
@@ -88,7 +92,7 @@ def downloadImages(path, movie):
             image.write(img.content)
         print "Downloaded backdrop" + stringy + " to " + location
         count += 1
-    
+
     img = requests.get(movie.poster.geturl())
     with open(location + "/folder.jpg", "wb") as image:
         image.write(img.content)
@@ -104,7 +108,6 @@ def downloadImages(path, movie):
     #     image.write(img.content)
     #   print "Downloaded poster" + stringy + " to " + location
     #   count += 1
-
 
 
 def tmdbFindEm():
@@ -124,7 +127,7 @@ def tmdbFindEm():
             movie = os.path.splitext(movie)[0]
 
         if len(location.replace(GLOBALPATH, '').replace('/', '')) > 0:
-            movie = location.replace(GLOBALPATH,'').replace('/','')
+            movie = location.replace(GLOBALPATH, '').replace('/', '')
 
         res = searchMovie(movie)
         if len(res) is 0:
@@ -154,6 +157,7 @@ def tmdbFindEm():
     print notfound
     processQueue.clear()
 
+
 def tmdbFindOne(path):
     from tmdb3 import searchMovie
 
@@ -165,7 +169,7 @@ def tmdbFindOne(path):
         movie = os.path.splitext(movie)[0]
 
     if len(location.replace(GLOBALPATH, '').replace('/', '')) > 0:
-        movie = location.replace(GLOBALPATH,'').replace('/','')
+        movie = location.replace(GLOBALPATH, '').replace('/', '')
 
     res = searchMovie(movie)
 
@@ -176,6 +180,7 @@ def tmdbFindOne(path):
         return res
     else:
         return None
+
 
 def acceptTmdbResult(tmdbid, path):
     filename = os.path.basename(path)
@@ -192,6 +197,7 @@ def acceptTmdbResult(tmdbid, path):
     movieArr = [mov.id, mov.title, year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename]
     addToDB(movieArr)
 
+
 def acceptEdit(tmdbid, path, id):
     filename = os.path.basename(path)
     location = os.path.dirname(path)
@@ -207,8 +213,9 @@ def acceptEdit(tmdbid, path, id):
     movieArr = [mov.id, mov.title, year, mov.tagline, mov.overview, mov.runtime, mov.userrating, mov.homepage, trailer, location, filename, id]
     updateDB(movieArr)
 
+
 def searchDatShiz():
-    
+
     if os.path.exists(path):
         print "path valid"
     else:
@@ -224,8 +231,10 @@ def searchDatShiz():
 
     tmdbFindEm(list)
 
+
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
+
 
 def init_db():
     with closing(connect_db()) as db:
@@ -233,9 +242,96 @@ def init_db():
             db.cursor().executescript(f.read())
         db.commit()
 
+def mediabrowser_meta(tmdbid, path):
+    import json
+    import io
+    movie = Movie(tmdbid)
+    mbjson = {}
+    mbjson["adult"] = movie.adult
+    mbjson["budget"] = movie.budget
+    castArr = []
+    for cast in movie.cast:
+        actor = {}
+        actor["character"] = cast.character
+        actor["id"] = cast.id
+        actor["name"] = cast.name
+        actor["order"] = cast.order
+        castArr.append(actor)
+    mbjson["cast"] = castArr
+
+    countriesArr = []
+    for key, value in movie.releases.iteritems():
+        country = {}
+        country["certification"] = value.certification
+        country["iso_3166_1"] = value.country
+        country["release_date"] = value.releasedate.isoformat()
+        countriesArr.append(country)
+    mbjson["countries"] = countriesArr
+
+    crewArr = []
+    for crew in movie.crew:
+        mem = {}
+        mem["department"] = crew.department
+        mem["id"] = crew.id
+        mem["job"] = crew.job
+        mem["name"] = crew.name
+        crewArr.append(mem)
+    mbjson["crew"] = crewArr
+
+    genreArr = []
+    for genre in movie.genres:
+        gen = {}
+        gen["id"] = genre.id
+        gen["name"] = genre.name
+        genreArr.append(gen)
+    mbjson["genres"] = genreArr
+
+    mbjson["homepage"] = movie.homepage
+    mbjson["id"] = movie.id
+    mbjson["imdb_id"] = movie.imdb
+    mbjson["original_title"] = movie.originaltitle
+    mbjson["overview"] = movie.overview
+    mbjson["popularity"] = movie.popularity
+
+    studiosArr = []
+    for studio in movie.studios:
+        stdio = {}
+        stdio["id"] = studio.id
+        stdio["name"] = studio.name
+        studiosArr.append(stdio)
+    mbjson["production_companies"] = studiosArr
+
+    mbjson["release_date"] = movie.releasedate.isoformat()
+    mbjson["revenue"] = movie.revenue
+    mbjson["runtime"] = movie.runtime
+
+    langs = []
+    for language in movie.languages:
+        lng = {}
+        lng["iso_639_1"] = language.code
+        lng["name"] = language.name
+        langs.append(lng)
+    mbjson["spoken_languages"] = langs
+
+    mbjson["tagline"] = movie.tagline
+    mbjson["title"] = movie.title
+    mbjson["vote_average"] = movie.userrating
+    mbjson["vote_count"] = movie.votes
+
+
+    if os.path.isfile(path):
+        location = os.path.dirname(path)
+    else:
+        location = path
+
+    with open(location + '/MBmovie.json', 'w') as outfile:
+        json.dump(mbjson, outfile)
+
+
 @app.before_request
 def before_request():
         g.db = connect_db()
+
 
 @app.teardown_request
 def teardown_request(exception):
@@ -244,13 +340,16 @@ def teardown_request(exception):
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute('select title, id from movies order by upper(title) asc')
+    cur = g.db.execute(
+        'select title, id from movies order by upper(title) asc')
     list = [dict(title=row[0], id=row[1]) for row in cur.fetchall()]
     return render_template('show_entries.html', movies=list)
+
 
 @app.route('/setup')
 def setup():
     return render_template('setup_directory.html')
+
 
 @app.route('/add_dir', methods=['POST'])
 def add_dir():
@@ -263,14 +362,17 @@ def add_dir():
     flash("added " + dir + " as directory")
     return redirect(url_for('search_dir'))
 
+
 @app.route('/search_dir')
 def search_dir():
-    cur = g.db.execute('select location from directories order by id desc limit 1')
+    cur = g.db.execute(
+        'select location from directories order by id desc limit 1')
     dir = cur.fetchone()
     list = recurseIt(str(dir[0]))
     import collections
     list = collections.OrderedDict(sorted(list.items()))
     return render_template('search_directory.html', list=list)
+
 
 @app.route('/add_movies', methods=["POST"])
 def add_movies_to_queue():
@@ -280,6 +382,7 @@ def add_movies_to_queue():
     flash("added " + str(len(processQueue)) + " movies to the queue")
     return redirect(url_for('process_movie_queue'))
 
+
 @app.route('/automatic_queue_process')
 def automagic_the_queue():
     if len(processQueue) == 0:
@@ -287,6 +390,7 @@ def automagic_the_queue():
     else:
         tmdbFindEm()
         return "updated..."
+
 
 @app.route('/process_movie_queue')
 def process_movie_queue():
@@ -307,14 +411,15 @@ def process_movie_queue():
                 list[movie.id] = movie.title
                 if len(movie.posters) > 0:
                     posters[movie.id] = movie.poster.geturl()
-            return render_template('search_movie.html', path = path, movies=list, posters=posters, id=-1)
+            return render_template('search_movie.html', path=path, movies=list, posters=posters, id=-1)
         else:
             return "no results for " + processQueue.popleft()
 
+
 @app.route('/acceptMovie', methods=["POST"])
 def accept_movie():
-    moviename = request.form["addedname"]
     tmdbid = request.form["radio"]
+    moviename = request.form[tmdbid]
     path = request.form["path"]
     if len(processQueue) > 0:
         accepted = processQueue.popleft()
@@ -331,7 +436,8 @@ def accept_movie():
 
 @app.route('/editmovie/<id>')
 def edit_movie(id):
-    cur = g.db.execute('select location, filename from movies where id=? limit 1', [id])
+    cur = g.db.execute(
+        'select location, filename from movies where id=? limit 1', [id])
     record = cur.fetchone()
     path = record[0] + '/' + record[1]
     processQueue.append(path)
@@ -343,10 +449,11 @@ def edit_movie(id):
             list[movie.id] = movie.title
             if len(movie.posters) > 0:
                 posters[movie.id] = movie.poster.geturl()
-        return render_template('search_movie.html', path = path, movies=list, posters=posters, id=id)
+        return render_template('search_movie.html', path=path, movies=list, posters=posters, id=id)
     else:
         flash("no results for " + processQueue.popleft())
         return redirect(url_for('process_movie_queue'))
+
 
 @app.route('/movie/<id>')
 def show_movie(id):
@@ -354,13 +461,21 @@ def show_movie(id):
     movie = cur.fetchone()
     return render_template('show_movie.html', movie=movie)
 
-@app.route('/downloadmeta/<id>')
-def download_meta(id):
+
+@app.route('/downloadimages/<id>')
+def download_images(id):
     cur = g.db.execute('select tmdbid, location, filename from movies where id=? limit 1', [id])
     record = cur.fetchone()
     movie = Movie(record[0])
     downloadImages(record[1] + '/' + record[2], movie)
-    return "downloaded metadata..."
+    return "downloaded images..."
+
+@app.route('/mediabrowser/<id>')
+def mediabrowser(id):
+    cur = g.db.execute('select tmdbid, location, filename from movies where id=? limit 1', [id])
+    record = cur.fetchone()
+    mediabrowser_meta(record[0], record[1] + '/' + record[2])
+    return "wrote mediabrowser metadata"
 
 app.config.from_object(__name__)
 if __name__ == '__main__':
