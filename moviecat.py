@@ -244,7 +244,7 @@ def init_db():
 
 def mediabrowser_meta(tmdbid, path):
     import json
-    import io
+
     movie = Movie(tmdbid)
     mbjson = {}
     mbjson["adult"] = movie.adult
@@ -324,7 +324,7 @@ def mediabrowser_meta(tmdbid, path):
     else:
         location = path
 
-    with open(location + '/MBmovie.json', 'w') as outfile:
+    with open(location + '/MBMovie.json', 'w') as outfile:
         json.dump(mbjson, outfile)
 
 
