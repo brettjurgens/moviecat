@@ -345,8 +345,13 @@ def teardown_request(exception):
 
 @app.route('/')
 def show_entries():
-    cur = g.db.execute(
-        'select title, id from movies order by upper(title) asc')
+    try:
+        cur = g.db.execute(
+            'select title, id from movies order by upper(title) asc')
+    except Exception, e:
+        init_db()
+        cur = g.db.execute(
+            'select title, id from movies order by upper(title) asc')
     list = [dict(title=row[0], id=row[1]) for row in cur.fetchall()]
     return render_template('show_entries.html', movies=list)
 
