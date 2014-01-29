@@ -36,3 +36,6 @@ nosetests.xml
 
 # moviecat
 moviecat.db
+
+# svn
+.svn
