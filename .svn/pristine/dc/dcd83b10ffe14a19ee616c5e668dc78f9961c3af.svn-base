@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if list|count >0 %}
+  <form id="addMovieForm" action="/add_movies" method="post">
+    <table class=movies>
+      <tr>
+        <td><td>
+        <td><b>Directory</b></td>
+      </tr>
+    {% for key in list recursive %}
+      <tr>
+        <td>
+          <input type="checkbox" id="{{list[key]}}/{{key}}" name="{{list[key]}}/{{key}}" checked="checked">
+        </td>
+        <td>
+          <label for="{{list[key]}}/{{key}}">
+            <b>{{list[key]}}</b>/{{key}}
+          </label>
+        </td>
+      </tr>
+    {% endfor %}
+    </table>
+    <input type="submit" />
+  </form>
+  {% endif %}
+{% endblock %}
