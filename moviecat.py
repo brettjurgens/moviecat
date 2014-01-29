@@ -19,7 +19,7 @@ from collections import deque
 processQueue = deque()
 
 # make dynamic
-GLOBALPATH = "/Volumes/media/Movies/BDs"
+GLOBALPATH = "/Users/brett/Movies"
 
 # web serve
 import sqlite3
@@ -37,6 +37,11 @@ PASSWORD = 'default'
 from tmdb3 import Movie, set_key
 set_key('a158113d4e983474500180058409852c')
 
+
+def updateGlobalPath():
+    # get directory and set as GLOBALPATH
+    cur = g.db.execute('select location from directories where id=1 limit 1')
+    GLOBALPATH = cur.fetchone()
 
 def recurseIt(path):
     # cur = g.db.execute('select id from movies where (filename=? and location=?) limit 1', [os.path.basename(path), os.path.dirname(path)])
@@ -348,7 +353,7 @@ def show_entries():
 
 @app.route('/setup')
 def setup():
-    return render_template('setup_directory.html')
+    return render_template('setup_directory.html', path=GLOBALPATH)
 
 
 @app.route('/add_dir', methods=['POST'])
@@ -386,16 +391,17 @@ def add_movies_to_queue():
 @app.route('/automatic_queue_process')
 def automagic_the_queue():
     if len(processQueue) == 0:
-        return "nothing in queue..."
+        return redirect(url_for('show_entries'))
     else:
         tmdbFindEm()
-        return "updated..."
+        flash("automagically processed the queue")
+        return redirect(url_for('show_entries'))
 
 
 @app.route('/process_movie_queue')
 def process_movie_queue():
     if len(processQueue) == 0:
-        return "nothing in queue..."
+        return redirect(url_for('show_entries'))
     else:
         list = {}
         path = processQueue[0]
@@ -423,7 +429,7 @@ def accept_movie():
     path = request.form["path"]
     if len(processQueue) > 0:
         accepted = processQueue.popleft()
-        if request.form["update_id"] > 0:
+        if "update_id" in request.form and request.form["update_id"] > 0:
             id = request.form["update_id"]
             acceptEdit(tmdbid, path, id)
             flash('Successfully updated ' + moviename)
